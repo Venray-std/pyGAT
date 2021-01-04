@@ -78,6 +78,7 @@ def train(epoch):
     t = time.time()
     model.train()
     optimizer.zero_grad()
+    #  每次训练都会输入一张图
     output = model(features, adj)
     loss_train = F.nll_loss(output[idx_train], labels[idx_train])
     acc_train = accuracy(output[idx_train], labels[idx_train])

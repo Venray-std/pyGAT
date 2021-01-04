@@ -7,6 +7,8 @@ import torch.nn.functional as F
 class GraphAttentionLayer(nn.Module):
     """
     Simple GAT layer, similar to https://arxiv.org/abs/1710.10903
+    核心是基于邻接矩阵更新节点邻接边的权重， 如果存在邻接边，权重用leakyrelu代替
+    然后使用softmax进行权重归一化，用得到的权重矩阵对原权重Wh进行加权，本质是在普通线性操作基础上添加图邻接矩阵和权重信息
     """
     def __init__(self, in_features, out_features, dropout, alpha, concat=True):
         super(GraphAttentionLayer, self).__init__()
@@ -25,17 +27,19 @@ class GraphAttentionLayer(nn.Module):
 
     def forward(self, h, adj):
         Wh = torch.mm(h, self.W) # h.shape: (N, in_features), Wh.shape: (N, out_features)
+        # torch.mul(a, b)是矩阵a和b对应位相乘， torch.mm(a, b)是矩阵a和b矩阵相乘
         a_input = self._prepare_attentional_mechanism_input(Wh)
+
         e = self.leakyrelu(torch.matmul(a_input, self.a).squeeze(2))
 
         zero_vec = -9e15*torch.ones_like(e)
-        attention = torch.where(adj > 0, e, zero_vec)
-        attention = F.softmax(attention, dim=1)
+        attention = torch.where(adj > 0, e, zero_vec)  # 对有连接的地方，相当于用relu更新权重。没有连接的地方权重设置趋近于0
+        attention = F.softmax(attention, dim=1)  # soltmax函数，归一化，对邻接矩阵每行，相当于重新更新了权重
         attention = F.dropout(attention, self.dropout, training=self.training)
-        h_prime = torch.matmul(attention, Wh)
+        h_prime = torch.matmul(attention, Wh)   # 用注意力邻接矩阵进行加权。核心是重更新每个节点邻接边的权值。
 
         if self.concat:
-            return F.elu(h_prime)
+            return F.elu(h_prime)  # elu activate function
         else:
             return h_prime
 
@@ -81,6 +85,11 @@ class GraphAttentionLayer(nn.Module):
         return all_combinations_matrix.view(N, N, 2 * self.out_features)
 
     def __repr__(self):
+        """格式化输出
+
+        Returns:
+            [type]: [description]
+        """        
         return self.__class__.__name__ + ' (' + str(self.in_features) + ' -> ' + str(self.out_features) + ')'
 
 

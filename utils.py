@@ -13,6 +13,23 @@ def encode_onehot(labels):
 
 
 def load_data(path="./data/cora/", dataset="cora"):
+    """导入数据
+    主要文件: .content, 包含节点id，节点属性, 节点类别
+    .cite 表示两个节点直接存在的连线。
+    sp.csr_matrix(idx_features_labels[:, 1:-1] 表示用系数矩阵存储节点矩阵（-1列为class,不含)。
+    将节点属性存到feature中,word_attribute 表示指示词汇中的每个单词在文章中是存在(由1表示)还是不存在(由0表示)。
+    
+    encode_onehot 表示用one-hot编码class，成为label
+    基于cora.cites 连接关系生成邻接矩阵
+    实际输入包括X, adj邻接矩阵。输出为label
+
+    Args:
+        path (str, optional): [description]. Defaults to "./data/cora/".
+        dataset (str, optional): [description]. Defaults to "cora".
+
+    Returns:
+        [type]: [description]
+    """ 
     """Load citation network dataset (cora only for now)"""
     print('Loading {} dataset...'.format(dataset))
 

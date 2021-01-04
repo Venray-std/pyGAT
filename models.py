@@ -9,7 +9,7 @@ class GAT(nn.Module):
         """Dense version of GAT."""
         super(GAT, self).__init__()
         self.dropout = dropout
-
+        
         self.attentions = [GraphAttentionLayer(nfeat, nhid, dropout=dropout, alpha=alpha, concat=True) for _ in range(nheads)]
         for i, attention in enumerate(self.attentions):
             self.add_module('attention_{}'.format(i), attention)
@@ -18,6 +18,7 @@ class GAT(nn.Module):
 
     def forward(self, x, adj):
         x = F.dropout(x, self.dropout, training=self.training)
+        # 注意力层，多头注意力，多个注意力层进行cat 
         x = torch.cat([att(x, adj) for att in self.attentions], dim=1)
         x = F.dropout(x, self.dropout, training=self.training)
         x = F.elu(self.out_att(x, adj))
